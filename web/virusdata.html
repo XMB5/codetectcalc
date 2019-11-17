@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Virus Data</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha256-YLGeXaapI0/5IgZopewRJcFXomhRMlYYjugPLSyNjTY=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.css" integrity="sha256-SHMGCYmST46SoyGgo4YR/9AlK1vf3ff84Aq9yK4hdqM=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.0.2/nouislider.min.css" integrity="sha256-6pa9Ln4B/FyHlxOYaXuwpET9xH0e21iX0SPLg9P5Ro0=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="virusdata.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Virus Data</a>
+</nav>
+
+<div class="container my-5">
+
+    <h2 class="my-3">Co-detection calculator</h2>
+    <p>Short description on how to use. Later there will be a paragraph on how to interpret the numbers.</p>
+    <form id="data_form">
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col">Rhinovirus +</th>
+                <th scope="col">Rhinovirus -</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <th scope="row">FluA +</th>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_a" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_b" required>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">FluA -</th>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_c" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_d" required>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-primary" id="calculate_button">Calculate</button>
+    </form>
+
+    <table class="table table-bordered" id="stat_table">
+        <tbody>
+        <tr>
+            <th scope="row">Observed co-detections</th>
+            <td id="observed_co_detect"></td>
+        </tr>
+        <tr>
+            <th scope="row">Expected co-detections</th>
+            <td id="expected_co_detect"></td>
+        </tr>
+        <tr>
+            <th scope="row">Fisher's p-val</th>
+            <td id="fisher_p_val"></td>
+        </tr>
+        <tr>
+            <th scope="row">χ2 p-val</th>
+            <td id="chi2_p_val"></td>
+        </tr>
+        <tr>
+            <th scope="row">Binomial p-val</th>
+            <td id="binomial_p_val"></td>
+        </tr>
+        <tr>
+            <th scope="row">Odds ratio</th>
+            <td id="odds_ratio"></td>
+        </tr>
+        <tr>
+            <th scope="row">Odds Ratio, 95% CI</th>
+            <td id="odds_ratio_95"></td>
+        </tr>
+        <tr>
+            <th scope="row">Number of tests (n)</th>
+            <td id="num_tests"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h3>Rates Around the World</h3>
+    <div id="map"></div>
+
+    <hr>
+    <h3 class="my-3">Share Your Data</h3>
+    <form>
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" class="form-control" id="location" placeholder="New Haven">
+            <input class="form-control" style="display: none" id="location_feedback_trigger">
+            <div class="invalid-feedback">
+                Choose a location from the dropdown
+            </div>
+        </div>
+        <div id="share_form_normal_inputs">
+            <div class="form-group">
+                <label for="institution">Institution</label>
+                <input type="text" class="form-control" id="institution" placeholder="Yale Hospital" required>
+                <div class="invalid-feedback">
+                    Enter the name of the institution (hospital, school, clinic, etc)
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="text" class="form-control" id="email" placeholder="foxman@yale.edu" required>
+                <div class="invalid-feedback">
+                    Enter your email
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="age_slider">Patient Age Range</label>
+                <div class="form-row mt-1 mb-5">
+                    <input type="number" id="age_min" min="0" class="form-control col-2 col-md-1 mr-3 ml-2">
+                    <div id="age_slider" class="col"></div>
+                    <input type="number" id="age_max" max="110" class="form-control col-2 col-md-1 ml-3">
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="share_button">Share</button>
+    </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/places.js@1.17.0/dist/cdn/places.min.js" integrity="sha256-XIzhcNieVr5qWnAaBHuoBw9Z2NnzYZBPsF3vdNVByPY=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/big-integer/1.6.47/BigInteger.min.js" integrity="sha256-es+ex6Oj344uak+VnCPyaHY2nzQkqhr7ByWVQgdjATA=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.js" integrity="sha256-EErZamuLefUnbMBQbsEqu1USa+btR2oIlCpBJbyD4/g=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.0.2/nouislider.min.js" integrity="sha256-VG+4f1Hm2q4e+DTEOaiZKlWjJm5W4yqnXNvKkWBYA20=" crossorigin="anonymous"></script>
+<script src="virusdata.js"></script>
+
+</body>
+</html>

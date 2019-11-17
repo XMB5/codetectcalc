@@ -1,0 +1,31 @@
+version: '3'
+services:
+  db:
+    image: 'mongo:4'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: 'root'
+      MONGO_INITDB_ROOT_PASSWORD: 'virusdata'
+    networks:
+      - 'dbnet'
+  web:
+    image: 'nginx'
+    networks:
+      - 'webnet'
+    ports:
+      - '80:80'
+    volumes:
+      - './web:/web:ro'
+      - './nginx.conf:/etc/nginx/nginx.conf:ro'
+  api:
+    build: './api'
+    networks:
+      - 'webnet'
+      - 'dbnet'
+    environment:
+      MONGO_USERNAME: 'root'
+      MONGO_PASSWORD: 'virusdata'
+      MONGO_URL: 'mongodb://db:27017'
+
+networks:
+  dbnet:
+  webnet:

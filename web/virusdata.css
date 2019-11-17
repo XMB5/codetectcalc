@@ -1,0 +1,11 @@
+#stat_table {
+    display: none;
+}
+
+#map {
+    height: 640px;
+}
+
+.unwanted_algolia_button {
+    display: none;
+}
