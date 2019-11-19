@@ -1,4 +1,4 @@
-#stat_table {
+.noshow {
     display: none;
 }
 
@@ -8,4 +8,22 @@
 
 .unwanted_algolia_button {
     display: none;
+}
+
+.noUi-tooltip {
+    display: none;
+}
+
+.noUi-active .noUi-tooltip {
+    display: block;
+}
+
+.key {
+    background-color: whitesmoke;
+    border: 10px solid whitesmoke;
+    border-radius: 5px;
+}
+
+.key > h6 {
+    font-size: 0.9rem;
 }

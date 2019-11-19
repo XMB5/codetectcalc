@@ -7,7 +7,7 @@ const maxRequestBodyLen = 1000;
 
 const requestJsonSchema = {
     bsonType: 'object',
-    required: ['a', 'b', 'c', 'd', 'lat', 'lng', 'email', 'institution', 'ip', 'uid', '_id'],
+    required: ['a', 'b', 'c', 'd', 'lat', 'lng', 'email', 'institution', 'ip', 'uid', '_id', 'patientAgeMin', 'patientAgeMax', 'startDate', 'endDate'],
     properties: {
         a: {
             bsonType: 'int'
@@ -38,6 +38,18 @@ const requestJsonSchema = {
         },
         uid: {
             type: 'string'
+        },
+        startDate: {
+            bsonType: 'date'
+        },
+        endDate: {
+            bsonType: 'date'
+        },
+        patientAgeMin: {
+            bsonType: 'int'
+        },
+        patientAgeMax: {
+            bsonType: 'int'
         },
         _id: {
             bsonType: 'objectId'
@@ -132,6 +144,12 @@ class VirusdataAPI {
                 let info = JSON.parse(buf.toString());
                 info['ip'] = req.headers['x-forwarded-for'];
                 info['uid'] = VirusdataAPI.getUidCookie(req);
+                info['startDate'] = new Date(Date.UTC(info.startYear, info.startMonth - 1)); //month -1 because Date.UTC takes 0 as january
+                delete info.startYear;
+                delete info.startMonth;
+                info['endDate'] = new Date(Date.UTC(info.endYear, info.endMonth - 1));
+                delete info.endYear;
+                delete info.endMonth;
                 debug('insert', info);
                 await this.collection.insertOne(info);
                 res.writeHead(204);
@@ -156,7 +174,7 @@ class VirusdataAPI {
 
     async handleListData(req, res) {
         const obj = await this.collection.find({}, {
-            projection: {lat: 1, lng: 1, a: 1, b: 1, c: 1, d: 1, _id: 0}
+            projection: {lat: 1, lng: 1, a: 1, b: 1, c: 1, d: 1, institution: 1, startDate: 1, endDate: 1, _id: 0}
         }).toArray();
         res.writeHead(200);
         res.end(JSON.stringify(obj));

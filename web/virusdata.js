@@ -30,15 +30,59 @@
         locationInput.removeClass('is-valid');
     }
 
+    let areDatesValid = true;
+    let showInvalidDateFeedback = false;
+    const dateInvalidTrigger = $('#date_feedback');
+
     let mymap;
 
     const ageSlider = $('#age_slider').get(0);
 
+    const dateStart = $('#date_start');
+    const dateEnd = $('#date_end');
+
+    function updateMonthValidity() {
+        const startDate = dateStart.MonthPicker('GetSelectedDate');
+        const endDate = dateEnd.MonthPicker('GetSelectedDate');
+        areDatesValid = startDate <= endDate;
+        if (showInvalidDateFeedback) {
+            dateInvalidTrigger.toggleClass('is-invalid', !areDatesValid);
+        }
+    }
+
     function main() {
-        mymap = L.map('map').setView([37, -95], 4);
+        mymap = L.map('map', {
+            worldCopyJump: true
+        }).setView([37, -95], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mymap);
+
+        const key = L.control({position: 'bottomright'});
+        key.onAdd = () => {
+
+            const elem = $(`<div class="key">
+<h6>Odds Ratio</h6>
+<table class="table table-sm my-0">
+<tbody>
+</tbody>
+</table>
+</div>`);
+            const tbody = elem.find('tbody');
+            for (let i = 0; i <= 3; i++) {
+                const tr = $('<tr></tr>');
+                const td1 = $('<td><i class="fas fa-circle"></i></td>');
+                td1.children().css('color', getColorForOR(i));
+                const td2 = $('<td></td>');
+                td2.text(i.toString());
+                tr.append(td1, td2);
+                tbody.append(tr);
+            }
+
+            return elem.get(0);
+
+        };
+        key.addTo(mymap);
 
         places({
             appId: 'pl7YKVORTGD1',
@@ -81,7 +125,13 @@
             step: 1,
             pips: {
                 mode: 'count',
-                values: 12
+                values: 6,
+                density: 5
+            },
+            tooltips: true,
+            format: {
+                to: x => x.toFixed(0),
+                from: x => parseInt(x)
             }
         });
 
@@ -117,7 +167,59 @@
             ageSlider.noUiSlider.set([null, ageMax.val()]);
         });
 
+        function getDisplayedYear(monthPicker) {
+            //they don't expose an api for this
+            return monthPicker.find('.month-picker-title').text().match(/\d+/)[0];
+        }
+        function removeHighlight(monthPicker) {
+            //the highlight on the current month makes the button look disabled, so the effect
+            monthPicker.find('.ui-state-highlight').removeClass('ui-state-highlight');
+        }
+        function setMonthToDisplayedYear() {
+            const elem = $(this);
+            const selectedMonth = elem.MonthPicker('GetSelectedMonth');
+            if (selectedMonth) {
+                if (selectedMonth > now.getMonth() + 1) {
+                    elem.MonthPicker('option', 'SelectedMonth', null);
+                } else {
+                    const correctMonth = elem.MonthPicker('GetSelectedMonth') + '/' + getDisplayedYear(elem);
+                    elem.MonthPicker('option', 'SelectedMonth', correctMonth);
+                }
+            }
+            removeHighlight(elem);
+            updateMonthValidity();
+        }
+        const now = new Date();
+        const monthPickerOpts = {
+            OnAfterChooseYear: setMonthToDisplayedYear,
+            OnAfterNextYear: setMonthToDisplayedYear,
+            OnAfterNextYears: setMonthToDisplayedYear,
+            OnAfterPreviousYear: setMonthToDisplayedYear,
+            OnAfterPreviousYears: setMonthToDisplayedYear,
+            OnAfterChooseMonth: updateMonthValidity,
+            SelectedMonth: now,
+            i18n: {
+                year: ''
+            },
+            MaxMonth: 0
+        };
+        dateStart.MonthPicker(monthPickerOpts);
+        removeHighlight(dateStart);
+        dateEnd.MonthPicker(monthPickerOpts);
+        removeHighlight(dateEnd);
+
         addAllDots();
+    }
+
+    function addDot(submission, zoomTo = false) {
+        const marker = getLeafletColorIcon([submission.lat, submission.lng], getColorForSubmission(submission))
+            .bindPopup(getPopupForSubmission(submission))
+            .addTo(mymap);
+        if (zoomTo) {
+            mymap.flyTo([submission.lat, submission.lng], 5);
+            marker.openPopup();
+            document.getElementById('map_heading').scrollIntoView({ behavior: 'smooth' })
+        }
     }
 
     async function addAllDots() {
@@ -126,16 +228,20 @@
             url: '/api/listdata',
             dataType: 'json'
         });
-        for (let submission of submissions) {
-            getLeafletColorIcon([submission.lat, submission.lng], getColorForSubmission(submission))
-                .bindPopup(getPopupForSubmission(submission))
-                .addTo(mymap);
-        }
+        submissions.forEach(sub => addDot(sub));
 
     }
 
     function getColorForSubmission(submission) {
-        return '#ff0000';
+        const oddsRatio = calcOR(submission.a, submission.b, submission.c, submission.d);
+        return getColorForOR(oddsRatio);
+    }
+
+    function getColorForOR(or) {
+        //0 is red, 120 is green, 240 is blue
+        const normalized = Math.pow(Math.E, -or); //between 0-1
+        const colored = normalized * 240;
+        return `hsla(${colored}, 100%, 50%, 0.5)`;
     }
 
     $('#calculate_button').click(showStats);
@@ -180,7 +286,7 @@
 
         $('#odds_ratio_95').text(calcORCIstring(a, b, c, d, oddsRatio));
 
-        $('#stat_table').fadeIn(400);
+        $('#stat_display, #share').fadeIn(400);
 
     }
 
@@ -233,7 +339,7 @@ Odds Ratio 95% CI: ${calcORCIstring(submission.a, submission.b, submission.c, su
 
     function share() {
 
-        if (!institutionInput.val() || !emailInput.val() || !isLocationValid) {
+        if (!institutionInput.val() || !emailInput.val() || !isLocationValid || !areDatesValid) {
             $('#share_form_normal_inputs').addClass('was-validated');
             makeLocationGreen = true;
             if (isLocationValid) {
@@ -241,6 +347,8 @@ Odds Ratio 95% CI: ${calcORCIstring(submission.a, submission.b, submission.c, su
             } else {
                 invalidLocation();
             }
+            showInvalidDateFeedback = true;
+            updateMonthValidity();
         } else {
             $('#share_form_normal_inputs').removeClass('was-validated');
             makeLocationGreen = false;
@@ -250,18 +358,44 @@ Odds Ratio 95% CI: ${calcORCIstring(submission.a, submission.b, submission.c, su
 
     }
 
+    let canShareData = true;
+
     function sendShareData() {
+        if (!canShareData) {
+            return;
+        }
+        canShareData = false;
         const obj = Object.assign({
             lat,
             lng,
             institution: institutionInput.val(),
-            email: emailInput.val()
+            email: emailInput.val(),
+            startMonth: parseInt(dateStart.MonthPicker('GetSelectedMonth')),
+            startYear: parseInt(dateStart.MonthPicker('GetSelectedYear')),
+            endMonth: parseInt(dateEnd.MonthPicker('GetSelectedMonth')),
+            endYear: parseInt(dateEnd.MonthPicker('GetSelectedYear')),
+            patientAgeMin: parseInt(ageSlider.noUiSlider.get()[0]),
+            patientAgeMax: parseInt(ageSlider.noUiSlider.get()[1])
         }, getAbcd());
+        $('#share_button_text').addClass('noshow');
+        $('#share_button_loading').removeClass('noshow');
         $.ajax({
             url: '/api/share',
             type: 'POST',
             data: JSON.stringify(obj),
-            contentType: 'application/json'
+            contentType: 'application/json',
+            success: () => {
+                $('#share_button_loading').addClass('noshow');
+                $('#share_success').removeClass('noshow');
+                $('#share_error').addClass('noshow');
+                addDot(obj, true);
+            },
+            error: e => {
+                $('#share_button_text').removeClass('noshow');
+                $('#share_button_loading').addClass('noshow');
+                $('#share_error').removeClass('noshow');
+                canShareData = true;
+            }
         });
     }
 
