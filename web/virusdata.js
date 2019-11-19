@@ -52,7 +52,12 @@
 
     function main() {
         mymap = L.map('map', {
-            worldCopyJump: true
+            maxBounds: [
+                [-90, -180],
+                [90, 180]
+            ],
+            maxBoundsViscosity: 1,
+            minZoom: 2
         }).setView([37, -95], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -307,10 +312,9 @@
     }
 
     function getPopupForSubmission(submission) {
-        const oddsRatio = calcOR(submission.a, submission.b, submission.c, submission.d);
-        return L.popup({
-            minWidth: 100
-        }).setContent(`<table class="table-sm table-bordered table-striped">
+        const elem = $(`<div>
+<h6 title="1"></h6>
+<table class="table-sm table-bordered table-striped">
 <thead>
 <tr>
     <th></th>
@@ -321,24 +325,35 @@
 <tbody>
 <tr>
     <th>Flu+</th>
-    <td>${submission.a}</td>
-    <td>${submission.b}</td>
+    <td a="1"></td>
+    <td b="1"></td>
 </tr>
 <tr>
     <th>Flu-</th>
-    <td>${submission.c}</td>
-    <td>${submission.d}</td>
+    <td c="1"></td>
+    <td d="1"></td>
 </tr>
 </tbody>
 </table>
 <p>
-Odds Ratio: ${oddsRatio.toFixed(2)} <br>
-Odds Ratio 95% CI: ${calcORCIstring(submission.a, submission.b, submission.c, submission.d, oddsRatio)} <br>
-</p>`);
+Odds Ratio: <span or="1"></span> <br>
+Odds Ratio 95% CI: <span orci="1"></span> <br>
+</p>
+</div>`);
+        //dont want any html injection
+        elem.find('[title]').text(submission.institution);
+        for (let num of ['a', 'b', 'c', 'd']) {
+            elem.find(`[${num}]`).text(submission[num].toString());
+        }
+        const oddsRatio = calcOR(submission.a, submission.b, submission.c, submission.d);
+        elem.find('[or]').text(oddsRatio.toFixed(2));
+        elem.find('[orci]').text(calcORCIstring(submission.a, submission.b, submission.c, submission.d, oddsRatio));
+        return L.popup({
+            minWidth: 100
+        }).setContent(elem.get(0));
     }
 
     function share() {
-
         if (!institutionInput.val() || !emailInput.val() || !isLocationValid || !areDatesValid) {
             $('#share_form_normal_inputs').addClass('was-validated');
             makeLocationGreen = true;
