@@ -1,3 +1,5 @@
+//Copyright 2019 Sam Foxman (https://github.com/XMB5/). All rights reserved.
+
 (function(){
 
     let lat, lng;
