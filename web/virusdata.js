@@ -33,7 +33,7 @@
     }
 
     let areDatesValid = true;
-    let showInvalidDateFeedback = false;
+    let showInvalidDates = false;
     const dateInvalidTrigger = $('#date_feedback');
 
     let mymap;
@@ -42,13 +42,48 @@
 
     const dateStart = $('#date_start');
     const dateEnd = $('#date_end');
+    const dateStartNative = $('#date_start_native');
+    const dateEndNative = $('#date_end_native');
+
+    const now = new Date();
+
+    for (let elem of [dateStartNative, dateEndNative]) {
+        elem.on('input', updateMonthValidity);
+        elem.attr('max', now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0'));
+    }
+
+    //https://stackoverflow.com/a/58065241
+    const isIOS = (/iPad|iPhone|iPod/.test(navigator.platform) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) &&
+        !window.MSStream;
+
+    function getDateFromInput(input) {
+        const dateStr = input.val();
+        if (!dateStr) {
+            return null;
+        }
+        const year = parseInt(dateStr.substring(0, 4));
+        const month = parseInt(dateStr.substring(5));
+        return new Date(year, month - 1); //date constructor uses months 0-11
+    }
+
+    function getStartDate() {
+        return isIOS ? getDateFromInput(dateStartNative) : dateStart.MonthPicker('GetSelectedDate');
+    }
+
+    function getEndDate() {
+        return isIOS ? getDateFromInput(dateEndNative) : dateEnd.MonthPicker('GetSelectedDate');
+    }
 
     function updateMonthValidity() {
-        const startDate = dateStart.MonthPicker('GetSelectedDate');
-        const endDate = dateEnd.MonthPicker('GetSelectedDate');
-        areDatesValid = startDate <= endDate;
-        if (showInvalidDateFeedback) {
-            dateInvalidTrigger.toggleClass('is-invalid', !areDatesValid);
+        const start = getStartDate();
+        const end = getEndDate();
+        if (!start || !end) {
+            areDatesValid = false;
+            dateInvalidTrigger.removeClass('is-invalid');
+        } else {
+            areDatesValid = start <= end;
+            dateInvalidTrigger.toggleClass('is-invalid', !areDatesValid && showInvalidDates);
         }
     }
 
@@ -187,7 +222,7 @@
             const selectedMonth = elem.MonthPicker('GetSelectedMonth');
             if (selectedMonth) {
                 if (selectedMonth > now.getMonth() + 1) {
-                    elem.MonthPicker('option', 'SelectedMonth', null);
+                    elem.MonthPicker('option', 'SelectedMonth', now);
                 } else {
                     const correctMonth = elem.MonthPicker('GetSelectedMonth') + '/' + getDisplayedYear(elem);
                     elem.MonthPicker('option', 'SelectedMonth', correctMonth);
@@ -196,24 +231,28 @@
             removeHighlight(elem);
             updateMonthValidity();
         }
-        const now = new Date();
-        const monthPickerOpts = {
-            OnAfterChooseYear: setMonthToDisplayedYear,
-            OnAfterNextYear: setMonthToDisplayedYear,
-            OnAfterNextYears: setMonthToDisplayedYear,
-            OnAfterPreviousYear: setMonthToDisplayedYear,
-            OnAfterPreviousYears: setMonthToDisplayedYear,
-            OnAfterChooseMonth: updateMonthValidity,
-            SelectedMonth: now,
-            i18n: {
-                year: ''
-            },
-            MaxMonth: 0
-        };
-        dateStart.MonthPicker(monthPickerOpts);
-        removeHighlight(dateStart);
-        dateEnd.MonthPicker(monthPickerOpts);
-        removeHighlight(dateEnd);
+        if (isIOS) {
+            $('#custom_month_pickers').addClass('noshow');
+            $('#native_month_pickers').removeClass('noshow');
+        } else {
+            const monthPickerOpts = {
+                OnAfterChooseYear: setMonthToDisplayedYear,
+                OnAfterNextYear: setMonthToDisplayedYear,
+                OnAfterNextYears: setMonthToDisplayedYear,
+                OnAfterPreviousYear: setMonthToDisplayedYear,
+                OnAfterPreviousYears: setMonthToDisplayedYear,
+                OnAfterChooseMonth: updateMonthValidity,
+                SelectedMonth: now,
+                i18n: {
+                    year: ''
+                },
+                MaxMonth: 0
+            };
+            dateStart.MonthPicker(monthPickerOpts);
+            removeHighlight(dateStart);
+            dateEnd.MonthPicker(monthPickerOpts);
+            removeHighlight(dateEnd);
+        }
 
         addAllDots();
     }
@@ -262,6 +301,17 @@
         };
     }
 
+    function formatNumber(x) {
+        if (1e-3 <= x && x <= 1) {
+            return x.toFixed(3);
+        } else if (x > 1 && x < 1e4) {
+            return x.toPrecision(5);
+        } else {
+            //less than 1e-3 or greater than 1e4
+            return x.toExponential(3);
+        }
+    }
+
     function showStats() {
 
         const {a, b, c, d} = getAbcd();
@@ -276,20 +326,27 @@
         const n = a + b + c + d;
 
         const expectedCoDetect = ((a + c) / n) * ((a + b) / n) * n;
-        $('#expected_co_detect').text(expectedCoDetect.toFixed(2));
+        $('#expected_co_detect').text(formatNumber(expectedCoDetect));
 
         $('#observed_co_detect').text(a);
 
-        $('#fisher_p_val').text(calcFisherPVal(a, b, c, d, n));
+        const useFisherPVal = shouldUseFisherPVal(a,  b, c, d, n);
 
-        const chi2 = Math.pow(a - expectedCoDetect, 2) / expectedCoDetect;
+        $('#fisher_row').toggleClass('noshow', !useFisherPVal);
+        $('#chi2_row').toggleClass('noshow', useFisherPVal);
 
-        $('#chi2_p_val').text(pochisq(chi2, 1));
+        if (useFisherPVal) {
+            $('#fisher_p_val').text(formatNumber(calcFisherPVal(a, b, c, d, n)));
+        } else {
+            const chi2 = Math.pow(a - expectedCoDetect, 2) / expectedCoDetect;
+            console.log(chi2);
+            $('#chi2_p_val').text(getFormattedChi2PVal(chi2));
+        }
 
         $('#num_tests').text(n.toString());
 
         const oddsRatio = calcOR(a, b, c, d);
-        $('#odds_ratio').text(oddsRatio.toFixed(2));
+        $('#odds_ratio').text(formatNumber(oddsRatio));
 
         $('#odds_ratio_95').text(calcORCIstring(a, b, c, d, oddsRatio));
 
@@ -297,7 +354,7 @@
 
     }
 
-    $('#share_button').click(share);
+    $('#share_your_data_button').click(share);
 
     const institutionInput = $('#institution');
     const emailInput = $('#email');
@@ -310,7 +367,7 @@
 
     function calcORCIstring(a, b, c, d, or) {
         const exponentPart = 1.96 * Math.sqrt(1 / a + 1 / b + 1 / c + 1 / d);
-        return (or * Math.pow(Math.E, -exponentPart)).toFixed(2) + ' - ' + (or * Math.pow(Math.E, exponentPart)).toFixed(2);
+        return formatNumber(or * Math.pow(Math.E, -exponentPart)) + ' - ' + formatNumber(or * Math.pow(Math.E, exponentPart));
     }
 
     function getPopupForSubmission(submission) {
@@ -348,7 +405,7 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
             elem.find(`[${num}]`).text(submission[num].toString());
         }
         const oddsRatio = calcOR(submission.a, submission.b, submission.c, submission.d);
-        elem.find('[or]').text(oddsRatio.toFixed(2));
+        elem.find('[or]').text(oddsRatio.toFixed(3));
         elem.find('[orci]').text(calcORCIstring(submission.a, submission.b, submission.c, submission.d, oddsRatio));
         return L.popup({
             minWidth: 100
@@ -356,15 +413,15 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
     }
 
     function share() {
-        if (!institutionInput.val() || !emailInput.val() || !isLocationValid || !areDatesValid) {
+        if (!institutionInput.val() || !emailInput.val() || !isLocationValid || !areDatesValid || !getStartDate() || !getEndDate() || getStartDate() > now || getEndDate() > now) {
             $('#share_form_normal_inputs').addClass('was-validated');
             makeLocationGreen = true;
+            showInvalidDates = true;
             if (isLocationValid) {
                 locationInput.addClass('is-valid');
             } else {
                 invalidLocation();
             }
-            showInvalidDateFeedback = true;
             updateMonthValidity();
         } else {
             $('#share_form_normal_inputs').removeClass('was-validated');
@@ -382,15 +439,17 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
             return;
         }
         canShareData = false;
+        const startDate = getStartDate();
+        const endDate = getEndDate();
         const obj = Object.assign({
             lat,
             lng,
             institution: institutionInput.val(),
             email: emailInput.val(),
-            startMonth: parseInt(dateStart.MonthPicker('GetSelectedMonth')),
-            startYear: parseInt(dateStart.MonthPicker('GetSelectedYear')),
-            endMonth: parseInt(dateEnd.MonthPicker('GetSelectedMonth')),
-            endYear: parseInt(dateEnd.MonthPicker('GetSelectedYear')),
+            startMonth: startDate.getMonth() + 1,
+            startYear: startDate.getFullYear(),
+            endMonth: endDate.getMonth() + 1,
+            endYear: endDate.getFullYear(),
             patientAgeMin: parseInt(ageSlider.noUiSlider.get()[0]),
             patientAgeMax: parseInt(ageSlider.noUiSlider.get()[1])
         }, getAbcd());
@@ -419,8 +478,8 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
     //https://en.wikipedia.org/wiki/Binomial_coefficient
     function nCr(n, r) {
         let out = bigInt.one;
-        for (let i = n; i > n - r; i--) {
-            out = out.multiply(i);
+        for (let i = 0; i < r; i++) {
+            out = out.multiply(n - i);
         }
         for (let i = 2; i <= r; i++) {
             out = out.divide(i);
@@ -430,6 +489,17 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
 
     function calcFisherPVal(a, b, c, d, n) {
         return (bigInt(Number.MAX_SAFE_INTEGER).multiply(nCr(a + b, a)).multiply(nCr(c + d, c)).divide(nCr(n, a + c)).toJSNumber()) / Number.MAX_SAFE_INTEGER;
+    }
+
+    function shouldUseFisherPVal(a, b, c, d, n) {
+        //use fisher pval if any expected value is < 5
+        const rowCols = [[a + b, a + c], [a + b, b + d], [c + d, a + c], [c + d, b + d]];
+        for (let rowCol of rowCols) {
+            if (rowCol[0] * rowCol[1] / n < 5) {
+                return true;
+            }
+        }
+        return false;
     }
 
     const markerRadius = 8;
@@ -455,6 +525,17 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
 </svg>`
     }
 
+    function getFormattedChi2PVal(chi2) {
+        //assumes 1 degree of freedom
+        const pval = pochisqDF1(chi2);
+        if (pval === 0) {
+            //pochisqDF1(35.999999) returns 1.9710012510998354e-9
+            //pochisqDF1(36) returns 0
+            return 'less than 2e-9'
+        } else {
+            return formatNumber(pval);
+        }
+    }
 
     //following 2 stat functions from https://web.archive.org/web/20120712105035/https://www.swogstat.org/stat/public/chisq_calculator.htm
 
@@ -475,11 +556,12 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
                 z values < 6.  For z values >= to 6.0, poz() returns 0.0.
     */
 
-    function poz(z) {
-        var y, x, w;
-        var Z_MAX = 6.0;              /* Maximum meaningful z value */
+    const Z_MAX = 6.0;              /* Maximum meaningful z value */
 
-        if (z == 0.0) {
+    function poz(z) {
+        let y, x, w;
+
+        if (z === 0.0) {
             x = 0.0;
         } else {
             y = 0.5 * Math.abs(z);
@@ -507,13 +589,6 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
         return z > 0.0 ? ((x + 1.0) * 0.5) : ((1.0 - x) * 0.5);
     }
 
-
-    var BIGX = 20.0;                  /* max value to represent exp(x) */
-
-    function ex(x) {
-        return (x < -BIGX) ? 0.0 : Math.exp(x);
-    }
-
     /*  POCHISQ  --  probability of chi-square value
 
               Adapted from:
@@ -521,51 +596,12 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
                       Collected Algorithms for the CACM 1967 p. 243
               Updated for rounding errors based on remark in
                       ACM TOMS June 1985, page 185
+
+              Modified to only support 1 degree of freedom
     */
 
-    function pochisq(x, df) {
-        var a, y, s;
-        var e, c, z;
-        var even;                     /* True if df is an even number */
-
-        var LOG_SQRT_PI = 0.5723649429247000870717135; /* log(sqrt(pi)) */
-        var I_SQRT_PI = 0.5641895835477562869480795;   /* 1 / sqrt(pi) */
-
-        if (x <= 0.0 || df < 1) {
-            return 1.0;
-        }
-
-        a = 0.5 * x;
-        even = !(df & 1);
-        if (df > 1) {
-            y = ex(-a);
-        }
-        s = (even ? y : (2.0 * poz(-Math.sqrt(x))));
-        if (df > 2) {
-            x = 0.5 * (df - 1.0);
-            z = (even ? 1.0 : 0.5);
-            if (a > BIGX) {
-                e = (even ? 0.0 : LOG_SQRT_PI);
-                c = Math.log(a);
-                while (z <= x) {
-                    e = Math.log(z) + e;
-                    s += ex(c * z - a - e);
-                    z += 1.0;
-                }
-                return s;
-            } else {
-                e = (even ? 1.0 : (I_SQRT_PI / Math.sqrt(a)));
-                c = 0.0;
-                while (z <= x) {
-                    e = e * (a / z);
-                    c = c + e;
-                    z += 1.0;
-                }
-                return c * y + s;
-            }
-        } else {
-            return s;
-        }
+    function pochisqDF1(x) {
+        return 2.0 * poz(-Math.sqrt(x));
     }
 
     main();

@@ -69,17 +69,13 @@
                 <th scope="row">Expected co-detections</th>
                 <td id="expected_co_detect"></td>
             </tr>
-            <tr>
+            <tr id="fisher_row">
                 <th scope="row">Fisher's p-val</th>
                 <td id="fisher_p_val"></td>
             </tr>
-            <tr>
+            <tr id="chi2_row">
                 <th scope="row">χ2 p-val</th>
                 <td id="chi2_p_val"></td>
-            </tr>
-            <tr>
-                <th scope="row">Binomial p-val</th>
-                <td id="binomial_p_val"></td>
             </tr>
             <tr>
                 <th scope="row">Odds ratio</th>
@@ -138,7 +134,7 @@
                         <input type="number" id="age_max" max="110" class="form-control col-2 col-xl-1 ml-3" required>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="custom_month_pickers">
                     <table id="date_table">
                         <thead>
                         <tr>
@@ -161,13 +157,29 @@
                         </tr>
                         </tbody>
                     </table>
-                    <input class="form-control noshow" id="date_feedback">
-                    <div class="invalid-feedback">
-                        End date before start date
+                </div>
+                <div id="native_month_pickers" class="noshow">
+                    <div class="form-group">
+                        <label for="date_start_native">Start Date</label>
+                        <input class="form-control" type="month" id="date_start_native" required>
+                        <div class="invalid-feedback">
+                            Start date in the future
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="date_end_native">End Date</label>
+                        <input class="form-control" type="month" id="date_end_native" required>
+                        <div class="invalid-feedback">
+                            End date in the future
+                        </div>
                     </div>
                 </div>
+                <input class="form-control noshow" id="date_feedback">
+                <div class="invalid-feedback form-group">
+                    End date before start date
+                </div>
             </div>
-            <button type="button" class="btn btn-primary" id="share_button">
+            <button type="button" class="btn btn-primary" id="share_your_data_button">
                 <span id="share_button_text">Share</span>
                 <div class="spinner-border text-light noshow" role="status" id="share_button_loading">
                     <span class="sr-only">Loading...</span>
