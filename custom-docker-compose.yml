@@ -1,0 +1,42 @@
+version: '3'
+services:
+  db:
+    image: 'mongo:4'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: 'root'
+      MONGO_INITDB_ROOT_PASSWORD: 'virusdata'
+    networks:
+      - 'dbnet'
+    volumes:
+      - './db:/data/db'
+    restart: 'always'
+  web:
+    image: 'xmb5/docker-nginx-certbot'
+    networks:
+      - 'webnet'
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - './web:/web:ro'
+      - './letsencrypt:/etc/letsencrypt'
+      - './custom-nginx.conf:/etc/nginx/user.conf.d/nginx.conf:ro'
+      - './nginx_auth:/nginx_auth:ro'
+    environment:
+      - 'IS_STAGING=0'
+      - 'CERTBOT_EMAIL=samfoxman320@gmail.com'
+    restart: 'always'
+  api:
+    build: './api'
+    networks:
+      - 'webnet'
+      - 'dbnet'
+    environment:
+      MONGO_USERNAME: 'root'
+      MONGO_PASSWORD: 'virusdata'
+      MONGO_URL: 'mongodb://db:27017'
+    restart: 'always'
+
+networks:
+  dbnet:
+  webnet:
