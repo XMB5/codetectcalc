@@ -105,7 +105,7 @@
         <form>
             <div class="form-group">
                 <label for="location">Location</label>
-                <input type="text" class="form-control" id="location" placeholder="New Haven">
+                <input type="text" class="form-control" id="location">
                 <input class="form-control noshow" id="location_feedback_trigger">
                 <div class="invalid-feedback">
                     Enter a location and choose from the autocomplete dropdown
@@ -114,14 +114,14 @@
             <div id="share_form_normal_inputs">
                 <div class="form-group">
                     <label for="institution">Institution</label>
-                    <input type="text" class="form-control" id="institution" placeholder="Yale Hospital" required>
+                    <input type="text" class="form-control" id="institution" required>
                     <div class="invalid-feedback">
                         Enter the name of the institution (hospital, school, clinic, etc)
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="text" class="form-control" id="email" placeholder="foxman@yale.edu" required>
+                    <input type="text" class="form-control" id="email" required>
                     <div class="invalid-feedback">
                         Enter your email
                     </div>
@@ -201,6 +201,14 @@
     <div id="map"></div>
 
 </div>
+
+<footer class="navbar navbar-light bg-light">
+    <div class="container my-3">
+        <div>
+            © 2019 Sam Foxman (<a href="https://github.com/XMB5">https://github.com/XMB5</a>)
+        </div>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/places.js@1.17.0/dist/cdn/places.min.js" integrity="sha256-XIzhcNieVr5qWnAaBHuoBw9Z2NnzYZBPsF3vdNVByPY=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/big-integer/1.6.47/BigInteger.min.js" integrity="sha256-es+ex6Oj344uak+VnCPyaHY2nzQkqhr7ByWVQgdjATA=" crossorigin="anonymous"></script>
