@@ -111,7 +111,7 @@
 </table>
 </div>`);
             const tbody = elem.find('tbody');
-            for (let i = 0; i <= 3; i++) {
+            for (let i = 0; i <= 1.5; i += 0.5) {
                 const tr = $('<tr></tr>');
                 const td1 = $('<td><i class="fas fa-circle"></i></td>');
                 td1.children().css('color', getColorForOR(i));
@@ -285,7 +285,7 @@
 
     function getColorForOR(or) {
         //0 is red, 120 is green, 240 is blue
-        const normalized = Math.pow(Math.E, -or); //between 0-1
+        const normalized = Math.pow(9, -or); //between 0-1
         const colored = normalized * 240;
         return `hsla(${colored}, 100%, 50%, 0.5)`;
     }
