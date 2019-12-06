@@ -279,8 +279,8 @@
     }
 
     function getColorForSubmission(submission) {
-        const oddsRatio = calcOR(submission.a, submission.b, submission.c, submission.d);
-        return getColorForOR(oddsRatio);
+        const orInfo = calcOR(submission.a, submission.b, submission.c, submission.d);
+        return getColorForOR(orInfo.oddsRatio);
     }
 
     function getColorForOR(or) {
@@ -345,10 +345,11 @@
 
         $('#num_tests').text(n.toString());
 
-        const oddsRatio = calcOR(a, b, c, d);
-        $('#odds_ratio').text(formatNumber(oddsRatio));
+        const orInfo = calcOR(a, b, c, d);
+        $('#odds_ratio').text(formatNumber(orInfo.oddsRatio));
+        $('.haldane_correction').toggleClass('noshow', !orInfo.haldaneCorrection);
 
-        $('#odds_ratio_95').text(calcORCIstring(a, b, c, d, oddsRatio));
+        $('#odds_ratio_95').text(calcORCIstring(a, b, c, d, orInfo));
 
         $('#stat_display, #share').fadeIn(400);
 
@@ -362,12 +363,20 @@
     //odds ratio & 95% CI from
     //http://sphweb.bumc.bu.edu/otlt/MPH-Modules/PH717-QuantCore/PH717_ComparingFrequencies/PH717_ComparingFrequencies8.html
     function calcOR(a, b, c, d) {
-        return (a * d) / (c * b);
+        const out = {};
+        out.haldaneCorrection = a === 0 || b === 0 || c === 0 || d === 0;
+        if (out.haldaneCorrection) {
+            out.oddsRatio = ((a + 0.5) * (d + 0.5)) / ((c + 0.5) * (b + 0.5));
+        } else {
+            out.oddsRatio = (a * d) / (c * b);
+        }
+        return out;
     }
 
-    function calcORCIstring(a, b, c, d, or) {
-        const exponentPart = 1.96 * Math.sqrt(1 / a + 1 / b + 1 / c + 1 / d);
-        return formatNumber(or * Math.pow(Math.E, -exponentPart)) + ' - ' + formatNumber(or * Math.pow(Math.E, exponentPart));
+    function calcORCIstring(a, b, c, d, orInfo) {
+        const radicand = orInfo.haldaneCorrection ? (1/(a + 0.5) + 1/(b + 0.5) + 1/(c + 0.5) + 1/(d + 0.5)) : 1 / a + 1 / b + 1 / c + 1 / d;
+        const exponentPart = 1.96 * Math.sqrt(radicand);
+        return formatNumber(orInfo.oddsRatio * Math.pow(Math.E, -exponentPart)) + ' - ' + formatNumber(orInfo.oddsRatio * Math.pow(Math.E, exponentPart));
     }
 
     function getPopupForSubmission(submission) {
@@ -404,9 +413,9 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
         for (let num of ['a', 'b', 'c', 'd']) {
             elem.find(`[${num}]`).text(submission[num].toString());
         }
-        const oddsRatio = calcOR(submission.a, submission.b, submission.c, submission.d);
-        elem.find('[or]').text(oddsRatio.toFixed(3));
-        elem.find('[orci]').text(calcORCIstring(submission.a, submission.b, submission.c, submission.d, oddsRatio));
+        const orInfo = calcOR(submission.a, submission.b, submission.c, submission.d);
+        elem.find('[or]').text(orInfo.oddsRatio.toFixed(3));
+        elem.find('[orci]').text(calcORCIstring(submission.a, submission.b, submission.c, submission.d, orInfo));
         return L.popup({
             minWidth: 100
         }).setContent(elem.get(0));

@@ -22,7 +22,7 @@
 <div class="container my-5">
 
     <h2 class="my-3">Co-detection calculator</h2>
-    <p>Short description on how to use. Later there will be a paragraph on how to interpret the numbers.</p>
+    <p>Fill in the 2x2 table for your patient population. Enter the number of respiratory samples in each category: positive for both rhinovirus and influenza A virus, positive for rhinovirus only, positive for influenza A only, or negative for both viruses.</p>
     <form id="data_form">
         <table class="table table-bordered">
             <thead>
@@ -78,11 +78,11 @@
                 <td id="chi2_p_val"></td>
             </tr>
             <tr>
-                <th scope="row">Odds ratio</th>
+                <th scope="row">Odds ratio <span class="noshow haldane_correction">(with Haldane correction)</span></th>
                 <td id="odds_ratio"></td>
             </tr>
             <tr>
-                <th scope="row">Odds Ratio, 95% CI</th>
+                <th scope="row">Odds Ratio, 95% CI <span class="noshow haldane_correction">(with Haldane correction)</span></th>
                 <td id="odds_ratio_95"></td>
             </tr>
             <tr>
@@ -92,10 +92,23 @@
             </tbody>
         </table>
         <h3>Interpret the numbers</h3>
+        <h5>
+            Observed vs. Expected
+        </h5>
         <p>
-            Paragraph explaining how to interpret the numbers. Explain importance of odds ratio,
-            p-value, 95% confidence intervals, observed vs expected. Maybe include a way to cite this data?
-            I can make a citation tool on this page if that would be helpful.
+            This tool calculates the number of co-detections expected if there is no interaction between viruses. A p-value of <0.05 indicates that the observed value is significantly different that the expected; i.e., the presence of one virus affects the presence of the other.
+        </p>
+        <h5>
+            Odds Ratio
+        </h5>
+        <p>
+            The odds ratio indicates the likelihood of detecting influenza A in a RV+ sample compared to the likelihood of detecting influenza A in an RV- sample. If the odds ratio is significantly less than 1, this means the presence of RV makes it less likely that the sample will be influenza A positive.
+        </p>
+        <h5>
+            95% CI
+        </h5>
+        <p>
+            If the 95% confidence interval includes 1, this either means that there is no association between the viruses, or that the study is under-powered to detect an effect (need more samples.)
         </p>
     </div>
 
