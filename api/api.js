@@ -176,7 +176,9 @@ class VirusdataAPI {
         const obj = await this.collection.find({}, {
             projection: {lat: 1, lng: 1, a: 1, b: 1, c: 1, d: 1, institution: 1, startDate: 1, endDate: 1, _id: 0}
         }).toArray();
-        res.writeHead(200);
+        res.writeHead(200, {
+            'Content-Type': 'application/json'
+        });
         res.end(JSON.stringify(obj));
     }
 
