@@ -272,7 +272,10 @@
 
         let submissions = await $.ajax({
             url: '/api/listdata',
-            dataType: 'json'
+            dataType: 'json',
+            headers: {
+                'x-no-csrf': '1'
+            }
         });
         submissions.forEach(sub => addDot(sub));
 
@@ -469,6 +472,9 @@ Odds Ratio 95% CI: <span orci="1"></span> <br>
             type: 'POST',
             data: JSON.stringify(obj),
             contentType: 'application/json',
+            headers: {
+                'x-no-csrf': '1'
+            },
             success: () => {
                 $('#share_button_loading').addClass('noshow');
                 $('#share_success').removeClass('noshow');

@@ -110,14 +110,16 @@ class VirusdataAPI {
         debug('starting http server on port ' + port);
         this.httpServer = http.createServer((req, res) => {
             debug(req.url);
-            if (req.url === '/share' && req.method === 'POST') {
-                this.handleShare(req, res);
-            } else if (req.url === '/listdata' && req.method === 'GET') {
-                this.handleListData(req, res);
-            } else {
-                res.writeHead(400);
-                res.end();
+            if (req.headers['x-no-csrf'] === '1') {
+                if (req.url === '/share' && req.method === 'POST') {
+                    return this.handleShare(req, res);
+                } else if (req.url === '/listdata' && req.method === 'GET') {
+                    return this.handleListData(req, res);
+                }
             }
+            //fallback
+            res.writeHead(400);
+            res.end();
         });
         await promisify(this.httpServer.listen).bind(this.httpServer)(port);
         debug('started http server');
