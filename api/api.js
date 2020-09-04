@@ -82,7 +82,6 @@ class VirusdataAPI {
         });
         await this.mongo.connect();
         this.db = this.mongo.db('virusdata');
-        await this.db.collection('shrekshrok').insertOne({shrek:1});
         const collections = await this.db.listCollections({
             name: 'shares'
         }, {
