@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Co-detection Calculator</title>
+    <link rel="stylesheet" href="lib/bootstrap-4.3.1.min.css"/>
+    <style>
+        .noshow {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+    <a class="navbar-brand" href="#"></a>
+</nav>
+
+<div class="container my-5">
+
+    <h2 class="my-3">Co-detection calculator</h2>
+    <p>Fill in the 2x2 table for your patient population. Enter the number of respiratory samples in each category: positive for both virus 1 and virus 2, positive for virus 1 only, positive for virus 2 only, or negative for both viruses.<br><small>Note: Analysis assumes sample is representative of the population.</small></p>
+    <form id="data_form">
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col">Virus 1 +</th>
+                <th scope="col">Virus 1 -</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <th scope="row">Virus 2 +</th>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_a" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_b" required>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Virus 2 -</th>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_c" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control" min="0" id="num_d" required>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-primary" id="calculate_button">Calculate</button>
+    </form>
+
+    <div id="stat_display" class="noshow">
+        <hr>
+        <h3>Statistics</h3>
+        <table class="table table-bordered">
+            <tbody>
+            <tr>
+                <th scope="row">Observed co-detections</th>
+                <td id="observed_co_detect"></td>
+            </tr>
+            <tr>
+                <th scope="row">Expected co-detections</th>
+                <td id="expected_co_detect"></td>
+            </tr>
+            <tr id="fisher_row">
+                <th scope="row">Fisher's p-val</th>
+                <td id="fisher_p_val"></td>
+            </tr>
+            <tr id="chi2_row">
+                <th scope="row">χ2 p-val</th>
+                <td id="chi2_p_val"></td>
+            </tr>
+            <tr>
+                <th scope="row">Odds ratio <span class="noshow haldane_correction">(with Haldane correction)</span></th>
+                <td id="odds_ratio"></td>
+            </tr>
+            <tr>
+                <th scope="row">Odds Ratio, 95% CI <span class="noshow haldane_correction">(with Haldane correction)</span></th>
+                <td id="odds_ratio_95"></td>
+            </tr>
+            <tr>
+                <th scope="row">Number of tests (n)</th>
+                <td id="num_tests"></td>
+            </tr>
+            </tbody>
+        </table>
+        <h3>Interpret the numbers</h3>
+        <h5>
+            Observed vs. Expected
+        </h5>
+        <p>
+            This tool calculates the number of co-detections expected if there is no interaction between viruses. A p-value of &lt;0.05 indicates that the observed value is significantly different that the expected; i.e., the presence of one virus affects the presence of the other.
+        </p>
+        <h5>
+            Odds Ratio
+        </h5>
+        <p>
+            The odds ratio indicates the likelihood of detecting influenza A in a RV+ sample compared to the likelihood of detecting influenza A in an RV- sample. If the odds ratio is significantly less than 1, this means the presence of RV makes it less likely that the sample will be influenza A positive.
+        </p>
+        <h5>
+            95% CI
+        </h5>
+        <p>
+            If the 95% confidence interval includes 1, this either means that there is no association between the viruses, or that the study is under-powered to detect an effect (need more samples.)
+        </p>
+    </div>
+
+</div>
+
+<footer class="navbar navbar-light bg-light">
+    <div class="container my-3">
+        <div>
+		Designed by <a href="https://github.com/XMB5">SHF</a> - <a href="https://github.com/XMB5/codetectcalc">Source code</a>
+        </div>
+    </div>
+</footer>
+
+<script src="lib/jquery-3.4.1.min.js"></script>
+<script src="index.js"></script>
+
+</body>
+</html>
